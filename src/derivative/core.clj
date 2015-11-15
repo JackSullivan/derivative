@@ -1,4 +1,5 @@
-(ns derivative.core)
+(ns derivative.core
+  (:require [clojure.math.numeric-tower :as math]))
 ;;  (:require [derivative.useful :refer [zip-index]]))
 
 
@@ -13,9 +14,6 @@
   [(filter pred coll) (filter (comp not pred) coll)])
 
 (defn expression-type [expr] (if (seq? expr) (first expr) (type expr)))
-
-; sub this with something else? maybe math/pow?
-(defn pow [x n] (reduce * (repeat n x)))
 
 ;; symbolic differentiation function, takes nested s-expressions that represent an equation and a variable to differentiate by.
 (defmulti differentiate (fn [[expr _]] (expression-type expr)))
@@ -34,6 +32,9 @@
         remove-idx (fn [idx i-e] (filter (comp not (partial = idx) first) i-e))]
     (cons '+ (map-indexed (fn [idx itm]
                             (cons '* (cons (differentiate [itm var]) (map second (remove-idx idx idx-expr))))) (rest expr)))))
+(defmethod differentiate 'math/expt
+  [[[_ base exponent] var]]
+  (list '* exponent ('math/expt base (- exponent 1))))
 
 ;; simplifies nested s-expressions such that the simplified result is equivalent to the original value. Should be called after differentiate to clean up
 (defmulti simplify expression-type)
@@ -41,6 +42,7 @@
 (defmethod simplify Long [v] (if (= v 0) nil (list v)))
 (defmethod simplify clojure.lang.Keyword [k] (list k))
 
+; todo: A lot of redunancy here - do something better
 (defmethod simplify '+
   [expr]
   (let [elems (mapcat simplify (rest expr))
@@ -71,5 +73,5 @@
         simple-exprs (concat num-lit cons-vars ops)]
     (if (= 1 (count simple-exprs)) simple-exprs (cons '* simple-exprs))))
 
-(defmethod simplify 'pow
-  [[_ base exponent]] (map (fn [e] (list 'pow base e)) (simplify exponent)))
+(defmethod simplify 'math/expt
+  [[_ base exponent]] (map (fn [e] (list 'math/expt base e)) (simplify exponent)))

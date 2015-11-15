@@ -3,4 +3,5 @@
   :url "http://github.com/JackSullivan/derivative"
   :license {:name "Apache License"
             :url "http://www.apache.org/licenses/LICENSE-2.0"}
-  :dependencies [[org.clojure/clojure "1.7.0"]])
+  :dependencies [[org.clojure/clojure "1.7.0"]
+                 [org.clojure/math.numeric-tower "0.0.4"]])
