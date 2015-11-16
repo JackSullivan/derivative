@@ -49,7 +49,7 @@
         [lits vars-and-ops] (dichotomize (comp (partial = Long) type) elems)
         [vars ops] (dichotomize (comp (partial = clojure.lang.Keyword) type) vars-and-ops)
         num-lit (simplify (reduce + lits))
-        cons-vars (map (fn [[var cnt]] (simplify (list '* var cnt))) (frequencies vars))
+        cons-vars (mapcat (fn [[var cnt]] (simplify (list '* var cnt))) (frequencies vars))
         simple-exprs (concat num-lit cons-vars ops)]
     (if (= 1 (count simple-exprs)) simple-exprs (cons '+ simple-exprs))))
 
@@ -59,7 +59,7 @@
         [lits vars-and-ops] (dichotomize (comp (partial = Long) type) elems)
         [vars ops] (dichotomize (comp (partial = clojure.lang.Keyword) type) vars-and-ops)
         num-lit (simplify (reduce - lits))
-        cons-vars (map (fn [[var cnt]] (simplify (list '- (list '* var cnt)))) (frequencies vars))
+        cons-vars (mapcat (fn [[var cnt]] (simplify (list '- (list '* var cnt)))) (frequencies vars))
         simple-exprs (concat num-lit cons-vars ops)]
     (if (= 1 (count simple-exprs)) simple-exprs (cons '- simple-exprs))))
 
@@ -69,9 +69,11 @@
         [lits vars-and-ops] (dichotomize (comp (partial = Long) type) elems)
         [vars ops] (dichotomize (comp (partial = clojure.lang.Keyword) type) vars-and-ops)
         num-lit (simplify (reduce * lits))
-        cons-vars (map (fn [[var cnt]] (simplify (list 'pow var cnt))) (frequencies vars))
+        cons-vars (mapcat (fn [[var cnt]] (simplify (list 'math/expt var cnt))) (frequencies vars))
         simple-exprs (concat num-lit cons-vars ops)]
     (if (= 1 (count simple-exprs)) simple-exprs (cons '* simple-exprs))))
 
 (defmethod simplify 'math/expt
-  [[_ base exponent]] (map (fn [e] (list 'math/expt base e)) (simplify exponent)))
+  [[_ base exponent]] (mapcat (fn [e] (cond (= e 0) (list 1)
+                                            (= e 1) (list base)
+                                            :else (list 'math/expt base e))) (simplify exponent)))
