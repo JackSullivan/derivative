@@ -34,7 +34,7 @@
                             (cons '* (cons (differentiate [itm var]) (map second (remove-idx idx idx-expr))))) (rest expr)))))
 (defmethod differentiate 'math/expt
   [[[_ base exponent] var]]
-  (list '* exponent ('math/expt base (- exponent 1))))
+  (list '* exponent (list 'math/expt base (- exponent 1))))
 
 ;; simplifies nested s-expressions such that the simplified result is equivalent to the original value. Should be called after differentiate to clean up
 (defmulti simplify expression-type)
