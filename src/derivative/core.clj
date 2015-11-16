@@ -51,7 +51,9 @@
         num-lit (simplify (reduce + lits))
         cons-vars (map (fn [[var cnt]] (simplify (list '* var cnt))) (frequencies vars))
         simple-exprs (concat (if (= 0 num-lit) nil (list num-lit)) cons-vars ops)]
-    (if (= 1 (count simple-exprs)) simple-exprs (cons '+ simple-exprs))))
+    (cond (empty? simple-exprs) 0
+          (= 1 (count simple-exprs)) (first simple-exprs)
+          :else (cons '+ simple-exprs))))
 
 (defmethod simplify '-
   [expr]
@@ -61,7 +63,9 @@
         num-lit (simplify (reduce - lits))
         cons-vars (map (fn [[var cnt]] (simplify (list '- (list '* var cnt)))) (frequencies vars))
         simple-exprs (concat (if (= 0 num-lit) nil (list num-lit)) cons-vars ops)]
-    (if (= 1 (count simple-exprs)) simple-exprs (cons '- simple-exprs))))
+    (cond (empty? simple-exprs) 0
+          (= 1 (count simple-exprs)) (first simple-exprs)
+          :else (cons '- simple-exprs))))
 
 (defmethod simplify '*
   [expr]
@@ -70,10 +74,15 @@
         [vars ops] (dichotomize (comp (partial = clojure.lang.Keyword) type) vars-and-ops)
         num-lit (simplify (reduce * lits))
         cons-vars (map (fn [[var cnt]] (simplify (list 'math/expt var cnt))) (frequencies vars))
-        simple-exprs (concat (if (= 0 num-lit) nil (list num-lit)) cons-vars ops)]
-    (if (= 1 (count simple-exprs)) simple-exprs (cons '* simple-exprs))))
+        simple-exprs (concat (if (= 1 num-lit) nil (list num-lit)) cons-vars ops)]
+    (cond (empty? simple-exprs) 0
+          (some (partial = 0) simple-exprs) 0
+          (= 1 (count simple-exprs)) (first simple-exprs)
+          :else (cons '* simple-exprs))))
 
 (defmethod simplify 'math/expt
-  [[_ base exponent]] (map (fn [e] (cond (= e 0) 1
-                                            (= e 1) base
-                                            :else (list 'math/expt base e))) (simplify exponent)))
+  [[_ base exponent]]
+  (let [e (simplify exponent)]
+    (cond (= e 0) 1
+          (= e 1) base
+          :else (list 'math/expt base e))))
